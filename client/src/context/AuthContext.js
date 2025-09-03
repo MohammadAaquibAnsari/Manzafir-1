@@ -30,11 +30,7 @@ export const AuthProvider = ({ children }) => {
       const idToken = await userFromFirebase.getIdToken();
       console.log("🔥 AuthContext: Firebase ID Token (for backend sync):", idToken);
 
-      const response = await axiosInstance.post('/users/profile', {}, {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      const response = await axiosInstance.post('/users/profile', {});
       console.log("✅ AuthContext: Backend sync response (MongoDB user):", response.data);
 
       setCurrentUser(response.data);
