@@ -1,3 +1,4 @@
+import traceback
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import pandas as pd
@@ -38,6 +39,16 @@ model = genai.GenerativeModel(
 
 # Combined FastAPI app
 app = FastAPI()
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    # Print the full error traceback to the logs
+    print("--- Unhandled Exception ---")
+    traceback.print_exc()
+    print("---------------------------")
+    return JSONResponse(
+        status_code=500,
+        content={"message": "An internal server error occurred."},
+    )
 
 app.add_middleware(
     CORSMiddleware,
