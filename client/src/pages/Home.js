@@ -329,7 +329,8 @@ const HomePage = () => {
     setIsLoading(true);
 
     try {
-      const response = await axiosInstance.post('http://127.0.0.1:8000/recommend_travel', formData);
+      const apiUrl = `${process.env.REACT_APP_ML_API_URL}/recommend_travel`;
+      const response = await axios.post(apiUrl, formData);
       const jsonResponse = JSON.parse(response.data.recommendation);
       console.log('Parsed Response:', jsonResponse);
       setRecommendedDestinations(jsonResponse);
@@ -567,7 +568,7 @@ const PackageCard = ({ pkg, index }) => {
       return imagePath;
     }
     // Otherwise, prepend the backend URL for static files
-    return `http://localhost:5000/${imagePath}`;
+    return `${process.env.REACT_APP_API_URL}/${imagePath}`;
   };
 
   return (
