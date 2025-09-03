@@ -31,7 +31,6 @@ fastjsonschema==2.19.1
 flatbuffers==24.3.25
 fonttools==4.50.0
 fqdn==1.5.1
-frozendict==2.4.6
 gast==0.6.0
 git-filter-repo==2.47.0
 google-ai-generativelanguage==0.6.15
