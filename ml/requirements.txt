@@ -20,7 +20,6 @@ click==8.1.7
 colorama==0.4.6
 comm==0.2.1
 contourpy==1.2.0
-curl_cffi==0.10.0
 cycler==0.12.1
 debugpy==1.8.0
 decorator==5.1.1
@@ -176,4 +175,3 @@ wheel==0.44.0
 widgetsnbextension==4.0.10
 wordcloud==1.9.3
 wrapt==1.16.0
-yfinance==0.2.58
