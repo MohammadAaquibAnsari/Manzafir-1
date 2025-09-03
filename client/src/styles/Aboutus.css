@@ -1,0 +1,18 @@
+.about_bg container {
+    background: url('../assets/images/about_bg.jpg') no-repeat center center;
+    background-size: cover;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.about_bg content {
+    background: rgba(255, 255, 255, 0.8); 
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    max-width: 80%;
+}
