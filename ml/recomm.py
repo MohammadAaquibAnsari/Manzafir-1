@@ -40,6 +40,7 @@ model = genai.GenerativeModel(
 
 # Combined FastAPI app
 app = FastAPI()
+
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
     # Print the full error traceback to the logs
@@ -215,6 +216,11 @@ async def recommend_travel(request: TravelRequest):
         rr = clean_json_response(response.text)
         return {"recommendation": rr}
     except Exception as e:
+        print(f"--- ERROR IN /recommend_travel ---")
+        print(f"Error Type: {type(e).__name__}")
+        print(f"Error Details: {e}")
+        traceback.print_exc()
+        print(f"------------------------------------")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Run the app
