@@ -1,5 +1,6 @@
 import traceback
 from fastapi import FastAPI, HTTPException,Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import pandas as pd
 import numpy as np
