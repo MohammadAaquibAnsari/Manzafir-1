@@ -1,7 +1,15 @@
 const admin = require('firebase-admin');
 const User = require('../models/User'); 
 
-const serviceAccount = require('../manzafir-travel-firebase-adminsdk-fbsvc-b1c54e77fe.json');
+// const serviceAccount = require('../manzafir-travel-firebase-adminsdk-fbsvc-b1c54e77fe.json');
+
+const serviceAccount = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  // This line is crucial to properly format the private key
+  privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+};
+
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
