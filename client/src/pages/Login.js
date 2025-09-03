@@ -12,19 +12,19 @@ function Login() {
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      // --- FIX START ---
-      // Pass an object with email and password to the login function
-      await login({ email, password });
-      // --- FIX END ---
-      toast.success("Logged in successfully!");
-      navigate('/');
-    } catch (error) {
-      console.error("Login error:", error); 
-      toast.error('Login failed: ' + (error.message || 'Unknown error'));
-    }
-  };
+    e.preventDefault();
+    console.log("1. Handle submit triggered."); // ADD THIS
+    try {
+      console.log("2. Calling login function with:", { email, password }); // ADD THIS
+      await login({ email, password });
+      console.log("3. Login function successful."); // ADD THIS
+      toast.success("Logged in successfully!");
+      navigate('/');
+    } catch (error) {
+      console.error("4. Login function failed with error:", error); // EDIT THIS
+      toast.error('Login failed: ' + (error.message || 'Unknown error'));
+    }
+  };
 
   return (
     <div
