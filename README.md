@@ -1,4 +1,4 @@
-# 🌍 Manzafir - Manzil se Musafir tak(https://manzafir-wl2h.onrender.com/)
+# 🌍 [Manzafir - Manzil se Musafir tak](https://manzafir-wl2h.onrender.com/)
 
 **Manzafir** is a web-based travel platform designed to simplify and enrich travel experiences for Gen Z explorers and family vacationers. With curated travel packages, intelligent matchmaking, personalized itineraries, and a socially interactive interface, Manzafir redefines how users plan and enjoy trips.
 
