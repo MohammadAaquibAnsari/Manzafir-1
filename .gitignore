@@ -11,7 +11,7 @@ manzafir-travel-firebase-adminsdk-fbsvc-b1c54e77fe.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
+# package-lock.json
 
 # Python
 __pycache__/
