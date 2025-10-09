@@ -1,30 +1,30 @@
 import traceback
+import json
 from fastapi import FastAPI, HTTPException,Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import pandas as pd
 import numpy as np
 from nltk.stem import WordNetLemmatizer
-from nltk.corpus import stopwords 
-from nltk.tokenize import word_tokenize 
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 import pickle
 import google.generativeai as genai
 from fastapi.middleware.cors import CORSMiddleware
-
 import os
 from dotenv import load_dotenv
 
-# Hotel & Food Recommender API setup
+# --- Load Environment Variables ---
+load_dotenv()
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+
+# --- Global Variables for Data ---
 df = None
 rating_matrix = None
 recommender = None
 hotel = None
 
-load_dotenv()
-
-GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-
-# Gemini API setup
+# --- Gemini API Configuration ---
 genai.configure(api_key=GOOGLE_API_KEY)
 generation_config = {
     "temperature": 0.5,
@@ -38,12 +38,24 @@ model = genai.GenerativeModel(
     generation_config=generation_config,
 )
 
-# Combined FastAPI app
+# --- FastAPI App Initialization ---
 app = FastAPI()
 
+# --- CORS Middleware ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://manzafir-wl2h.onrender.com",
+        "http://localhost:3000"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- Exception Handler ---
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
-    # Print the full error traceback to the logs
     print("--- Unhandled Exception ---")
     traceback.print_exc()
     print("---------------------------")
@@ -52,16 +64,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
         content={"message": "An internal server error occurred."},
     )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://manzafir-wl2h.onrender.com",
-        "http://localhost:3000"],  # Your frontend's URL
-    allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
-    allow_headers=["*"],  # Allow all headers
-)
-
+# --- Startup Event to Load Models ---
 @app.on_event("startup")
 async def load_data():
     global df, rating_matrix, recommender, hotel
@@ -85,8 +88,8 @@ async def load_data():
         print(f"Error loading pickle files: {e}")
         raise HTTPException(status_code=500, detail="Failed to load data")
 
-# Hotel & Food Recommender API
-class RecommendationRequest(BaseModel):
+# --- Pydantic Models for Request Bodies ---
+class FoodRecommendationRequest(BaseModel):
     title: str
 
 class HotelRecommendationRequest(BaseModel):
@@ -94,6 +97,13 @@ class HotelRecommendationRequest(BaseModel):
     number_of_guests: int
     features: str
 
+class TravelRequest(BaseModel):
+    budget: str
+    starting_location: str
+    group_size: int
+    preference_type: str
+
+# --- Helper Functions ---
 def Get_Food_Recommendations(title: str):
     user = df[df['Name'] == title]
     if user.empty:
@@ -131,99 +141,69 @@ def requirementbased(city, number, features):
     reqbased.drop_duplicates(subset='hotelcode', keep='first', inplace=True)
     return reqbased[['hotelname', 'roomtype', 'guests_no', 'starrating', 'address', 'roomamenities', 'ratedescription']].head(5)
 
-@app.post("/food_recommendations/")
-async def get_recommendations(request: RecommendationRequest):
-    title = request.title
-    recommendations = Get_Food_Recommendations(title)
-    return {"recommendations": recommendations}
-
-def clean_json_response(response):
-    """
-    Removes markdown JSON formatting from the response
-    """
-    # Remove json and  markers
-    cleaned_response = response.replace("json", "").replace("", "").strip()
+def clean_json_response(response: str):
+    """Removes markdown JSON formatting from the response."""
+    cleaned_response = response.replace("```json", "").replace("```", "").strip()
     return cleaned_response
+
+# --- API Endpoints ---
+@app.post("/food_recommendations/")
+async def get_food_recommendations(request: FoodRecommendationRequest):
+    recommendations = Get_Food_Recommendations(request.title)
+    return {"recommendations": recommendations}
 
 @app.post("/hotel_recommendations/")
 async def get_hotel_recommendations(request: HotelRecommendationRequest):
-    city = request.city
-    number_of_guests = request.number_of_guests
-    features = request.features
-    recommendations = requirementbased(city, number_of_guests, features)
+    recommendations = requirementbased(request.city, request.number_of_guests, request.features)
     return {"recommendations": recommendations.to_dict(orient="records")}
-
-# Travel Recommendation API (Gemini)
-class TravelRequest(BaseModel):
-    budget: str
-    starting_location: str
-    group_size: int
-    preference_type: str
 
 @app.post("/recommend_travel")
 async def recommend_travel(request: TravelRequest):
+    cleaned_text = ""
     try:
         prompt = f"""
-        Provide Multiple travel recommendations in JSON format based on the following details:
+        Provide multiple travel recommendations in strict JSON format based on the following details:
         - Budget: {request.budget}
         - Starting Location: {request.starting_location}
         - Group Size: {request.group_size}
         - Preference Type: {request.preference_type}
 
-        Avoid ``` and 'json' in the response
-        Return the response in the following JSON structure:
-        
-       { [
-  {
-    "recommended_destinations": {
-      "name": "string",
-      "description": "string",
-      "highlights": ["string"]
-    },
-    "estimated_costs": {
-      "flights": int,
-      "accommodation": int,
-      "daily_expenses": int,
-      "total_cost": int,
-      "currency": "INR"
-    },
-    "accommodation": [
-      {
-        "type": "string",
-        "price_range": "₹5000-₹8000",
-        "suggested_options": ["string"]
-      }
-    ],
-    "travel_logistics": {
-      "recommended_transport": "string",
-      "travel_duration": "string",
-      "visa_requirements": "string",
-      "local_transportation": "string"
-    },
-    "best_time_to_visit": {
-      "recommended_months": ["string"],
-      "weather": "string",
-      "peak_season": "string",
-      "off_peak_season": "string"
-    }
-  }
-]
-       }
-        
+        IMPORTANT: Do not include ```json or ``` markers in the response.
+        Return ONLY the raw JSON array of objects, without any surrounding text or explanations.
+        The required JSON structure is:
+        [
+            {{
+                "recommended_destinations": {{"name": "string", "description": "string", "highlights": ["string"]}},
+                "estimated_costs": {{"flights": "integer", "accommodation": "integer", "daily_expenses": "integer", "total_cost": "integer", "currency": "INR"}},
+                "accommodation": [{{ "type": "string", "price_range": "string", "suggested_options": ["string"]}}],
+                "travel_logistics": {{"recommended_transport": "string", "travel_duration": "string", "visa_requirements": "string", "local_transportation": "string"}},
+                "best_time_to_visit": {{"recommended_months": ["string"], "weather": "string", "peak_season": "string", "off_peak_season": "string"}}
+            }}
+        ]
         """
         chat_session = model.start_chat(history=[])
         response = chat_session.send_message(prompt)
-        rr = clean_json_response(response.text)
-        return {"recommendation": rr}
+        
+        cleaned_text = clean_json_response(response.text)
+        json_data = json.loads(cleaned_text)
+        
+        return {"recommendation": json_data}
+
+    except json.JSONDecodeError:
+        print("--- JSON DECODE ERROR in /recommend_travel ---")
+        print(f"Failed to parse Gemini response: {cleaned_text}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to parse recommendation data from the model.")
     except Exception as e:
         print(f"--- ERROR IN /recommend_travel ---")
         print(f"Error Type: {type(e).__name__}")
         print(f"Error Details: {e}")
         traceback.print_exc()
-        print(f"------------------------------------")
+        print("------------------------------------")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Run the app
+# --- Main Entry Point ---
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
+
